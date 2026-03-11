@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { API_URLS } from "@config/api-config";
 import { bookingRequestBody } from "@data/booking-data";
+import { getAuthToken } from "@helpers/auth-helper";
 
 test("Restful Booker - health check", async ({ request }) => {
   const healthResponse = await request.get(`${API_URLS.herokuappBooking}/ping`);
@@ -9,29 +10,10 @@ test("Restful Booker - health check", async ({ request }) => {
 });
 
 test("Auth create token", async ({ request }) => {
-  const authRequestBody = {
-    username: "admin",
-    password: "password123",
-  };
+  const token = await getAuthToken(request);
 
-  const authResponse = await request.post(`${API_URLS.herokuappBooking}/auth`, {
-    data: authRequestBody,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
-
-  expect(authResponse.status()).toBe(200);
-
-  const authResponseBody = await authResponse.json();
-
-  expect(authResponseBody).toHaveProperty("token");
-
-  const authToken = authResponseBody.token;
-
-  expect(authToken).toBeTruthy();
-  expect(typeof authToken).toBe("string");
+  expect(token).toBeTruthy();
+  expect(typeof token).toBe("string");
 });
 
 test("Create booking", async ({ request }) => {
