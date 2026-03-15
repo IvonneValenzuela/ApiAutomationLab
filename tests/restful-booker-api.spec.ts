@@ -1,15 +1,19 @@
 import { test, expect } from "@playwright/test";
 import { API_URLS } from "@config/api-config";
-import { bookingRequestBody } from "@data/booking-data";
+import { createBooking } from "@helpers/booking-helper";
+import {
+  createBookingData,
+  createUpdatedBookingData,
+} from "@data/booking-data";
 import { getAuthToken } from "@helpers/auth-helper";
 
 test("Restful Booker - health check", async ({ request }) => {
-  const healthResponse = await request.get(`${API_URLS.herokuappBooking}/ping`);
-  const statusCode = healthResponse.status();
+  const response = await request.get(`${API_URLS.herokuappBooking}/ping`);
+  const statusCode = response.status();
   expect(statusCode).toBe(201);
 });
 
-test("Auth create token", async ({ request }) => {
+test("Get Auth token", async ({ request }) => {
   const token = await getAuthToken(request);
 
   expect(token).toBeTruthy();
@@ -17,75 +21,25 @@ test("Auth create token", async ({ request }) => {
 });
 
 test("Create booking", async ({ request }) => {
-  const bookingResponse = await request.post(
-    `${API_URLS.herokuappBooking}/booking`,
-    {
-      data: bookingRequestBody,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    },
+  const bookingRequestBody = createBookingData();
+
+  const { bookingId, bookingResponseBody } = await createBooking(
+    request,
+    bookingRequestBody,
   );
 
-  const bookingResponseBody = await bookingResponse.json();
-  const bookingId = bookingResponseBody.bookingid;
-
-  expect(bookingResponse.status()).toBe(200);
-  expect(bookingResponseBody).toHaveProperty("booking");
-  expect(bookingResponseBody).toHaveProperty("bookingid");
-  expect(typeof bookingId).toBe("number");
-  expect(bookingId).toBeTruthy();
-
   const createdBooking = bookingResponseBody.booking;
-
   expect(createdBooking.firstname).toBe(bookingRequestBody.firstname);
   expect(createdBooking.lastname).toBe(bookingRequestBody.lastname);
   expect(createdBooking.totalprice).toBe(bookingRequestBody.totalprice);
-  expect(createdBooking.depositpaid).toBe(bookingRequestBody.depositpaid);
-
-  expect(createdBooking.bookingdates).toBeTruthy();
-  expect(createdBooking.bookingdates.checkin).toBe(
-    bookingRequestBody.bookingdates.checkin,
-  );
-  expect(createdBooking.bookingdates.checkout).toBe(
-    bookingRequestBody.bookingdates.checkout,
-  );
-
-  expect(createdBooking.additionalneeds).toBe(
-    bookingRequestBody.additionalneeds,
-  );
 
   console.log("Booking created:", bookingId);
 });
 
 test("Get booking by id", async ({ request }) => {
-  const bookingRequestBody = {
-    firstname: "Ivonne",
-    lastname: "Valenzuela",
-    totalprice: 121,
-    depositpaid: true,
-    bookingdates: {
-      checkin: "2026-03-01",
-      checkout: "2026-03-05",
-    },
-    additionalneeds: "breakfast",
-  };
+  const bookingRequestBody = createBookingData();
 
-  const bookingResponse = await request.post(
-    `${API_URLS.herokuappBooking}/booking`,
-    {
-      data: bookingRequestBody,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    },
-  );
-
-  expect(bookingResponse.status()).toBe(200);
-  const bookingResponseBody = await bookingResponse.json();
-  const bookingId = bookingResponseBody.bookingid;
+  const { bookingId } = await createBooking(request, bookingRequestBody);
 
   const getBookingResponse = await request.get(
     `${API_URLS.herokuappBooking}/booking/${bookingId}`,
@@ -97,77 +51,32 @@ test("Get booking by id", async ({ request }) => {
   );
 
   expect(getBookingResponse.status()).toBe(200);
+
   const getBookingBody = await getBookingResponse.json();
 
   expect(getBookingBody.firstname).toBe(bookingRequestBody.firstname);
   expect(getBookingBody.lastname).toBe(bookingRequestBody.lastname);
   expect(getBookingBody.totalprice).toBe(bookingRequestBody.totalprice);
-
-  console.log("Booking created:", bookingId);
+  expect(getBookingBody.depositpaid).toBe(bookingRequestBody.depositpaid);
+  expect(getBookingBody.bookingdates.checkin).toBe(
+    bookingRequestBody.bookingdates.checkin,
+  );
+  expect(getBookingBody.bookingdates.checkout).toBe(
+    bookingRequestBody.bookingdates.checkout,
+  );
+  expect(getBookingBody.additionalneeds).toBe(
+    bookingRequestBody.additionalneeds,
+  );
 });
 
 test("Update booking", async ({ request }) => {
-  const bookingRequestBody = {
-    firstname: "Ivonne",
-    lastname: "Valenzuela",
-    totalprice: 111,
-    depositpaid: true,
-    bookingdates: {
-      checkin: "2026-03-01",
-      checkout: "2026-03-05",
-    },
-    additionalneeds: "lunch",
-  };
+  const bookingRequestBody = createBookingData();
 
-  const bookingResponse = await request.post(
-    `${API_URLS.herokuappBooking}/booking`,
-    {
-      data: bookingRequestBody,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    },
-  );
+  const { bookingId } = await createBooking(request, bookingRequestBody);
 
-  expect(bookingResponse.status()).toBe(200);
+  const authToken = await getAuthToken(request);
 
-  const bookingResponseBody = await bookingResponse.json();
-  const bookingId = bookingResponseBody.bookingid;
-
-  const authRequestBody = {
-    username: "admin",
-    password: "password123",
-  };
-
-  const authResponse = await request.post(`${API_URLS.herokuappBooking}/auth`, {
-    data: authRequestBody,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
-
-  expect(authResponse.status()).toBe(200);
-
-  const authResponseBody = await authResponse.json();
-  const authToken = authResponseBody.token;
-
-  expect(authResponseBody).toHaveProperty("token");
-  expect(authToken).toBeTruthy();
-  expect(typeof authToken).toBe("string");
-
-  const updatedBookingBody = {
-    firstname: "Ivonne",
-    lastname: "Updated",
-    totalprice: 333,
-    depositpaid: false,
-    bookingdates: {
-      checkin: "2026-04-01",
-      checkout: "2026-04-05",
-    },
-    additionalneeds: "Dinner",
-  };
+  const updatedBookingBody = createUpdatedBookingData();
 
   const updateBookingResponse = await request.put(
     `${API_URLS.herokuappBooking}/booking/${bookingId}`,
@@ -185,77 +94,13 @@ test("Update booking", async ({ request }) => {
 
   const updateBookingResponseBody = await updateBookingResponse.json();
 
-  expect(updateBookingResponseBody.firstname).toBe(
-    updatedBookingBody.firstname,
-  );
-  expect(updateBookingResponseBody.lastname).toBe(updatedBookingBody.lastname);
-  expect(updateBookingResponseBody.totalprice).toBe(
-    updatedBookingBody.totalprice,
-  );
-  expect(updateBookingResponseBody.depositpaid).toBe(
-    updatedBookingBody.depositpaid,
-  );
-  expect(updateBookingResponseBody.bookingdates.checkin).toBe(
-    updatedBookingBody.bookingdates.checkin,
-  );
-  expect(updateBookingResponseBody.bookingdates.checkout).toBe(
-    updatedBookingBody.bookingdates.checkout,
-  );
-  expect(updateBookingResponseBody.additionalneeds).toBe(
-    updatedBookingBody.additionalneeds,
-  );
+  expect(updateBookingResponseBody).toEqual(updatedBookingBody);
 });
 
 test("Delete booking", async ({ request }) => {
-  const bookingRequestBody = {
-    firstname: "Ivonne",
-    lastname: "Valenzuela",
-    totalprice: 111,
-    depositpaid: true,
-    bookingdates: {
-      checkin: "2026-03-01",
-      checkout: "2026-03-05",
-    },
-    additionalneeds: "lunch",
-  };
+  const { bookingId } = await createBooking(request, createBookingData());
 
-  const bookingResponse = await request.post(
-    `${API_URLS.herokuappBooking}/booking`,
-    {
-      data: bookingRequestBody,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    },
-  );
-
-  expect(bookingResponse.status()).toBe(200);
-
-  const bookingResponseBody = await bookingResponse.json();
-  const bookingId = bookingResponseBody.bookingid;
-
-  const authRequestBody = {
-    username: "admin",
-    password: "password123",
-  };
-
-  const authResponse = await request.post(`${API_URLS.herokuappBooking}/auth`, {
-    data: authRequestBody,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
-
-  expect(authResponse.status()).toBe(200);
-
-  const authResponseBody = await authResponse.json();
-  const authToken = authResponseBody.token;
-
-  expect(authResponseBody).toHaveProperty("token");
-  expect(authToken).toBeTruthy();
-  expect(typeof authToken).toBe("string");
+  const authToken = await getAuthToken(request);
 
   const deleteBookingResponse = await request.delete(
     `${API_URLS.herokuappBooking}/booking/${bookingId}`,
