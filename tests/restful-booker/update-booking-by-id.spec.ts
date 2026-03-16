@@ -10,7 +10,7 @@ import { getAuthToken } from "@helpers/auth-helper";
 test("Update booking by id", async ({ request }) => {
   const bookingRequestBody = createBookingData();
 
-  const { bookingId } = await createBooking(request, bookingRequestBody);
+  const bookingId = await createBooking(request, bookingRequestBody);
 
   const authToken = await getAuthToken(request);
 

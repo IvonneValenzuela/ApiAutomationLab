@@ -6,7 +6,7 @@ import { createBookingData } from "@data/booking-data";
 test("Get booking by id", async ({ request }) => {
   const bookingRequestBody = createBookingData();
 
-  const { bookingId } = await createBooking(request, bookingRequestBody);
+  const bookingId = await createBooking(request, bookingRequestBody);
 
   const getBookingResponse = await request.get(
     `${API_URLS.herokuappBooking}/booking/${bookingId}`,

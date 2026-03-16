@@ -6,14 +6,13 @@ import {
   createUpdatedBookingData,
 } from "@data/booking-data";
 import { getAuthToken } from "@helpers/auth-helper";
+import { Booking } from "models/booking";
 
 test("Booking lifecycle", async ({ request }) => {
-  // 1. Create booking
   const bookingRequestBody = createBookingData();
 
-  const { bookingId } = await createBooking(request, bookingRequestBody);
+  const bookingId = await createBooking(request, bookingRequestBody);
 
-  // 2. Get booking by id and validate created data
   const getBookingResponse = await request.get(
     `${API_URLS.herokuappBooking}/booking/${bookingId}`,
     {
@@ -25,14 +24,12 @@ test("Booking lifecycle", async ({ request }) => {
 
   expect(getBookingResponse.status()).toBe(200);
 
-  const getBookingBody = await getBookingResponse.json();
+  const getBookingBody: Booking = await getBookingResponse.json();
 
   expect(getBookingBody).toEqual(bookingRequestBody);
 
-  // 3. Get auth token
   const authToken = await getAuthToken(request);
 
-  // 4. Update booking
   const updatedBookingBody = createUpdatedBookingData();
 
   const updateBookingResponse = await request.put(
@@ -49,11 +46,10 @@ test("Booking lifecycle", async ({ request }) => {
 
   expect(updateBookingResponse.status()).toBe(200);
 
-  const updateBookingResponseBody = await updateBookingResponse.json();
+  const updateBookingResponseBody: Booking = await updateBookingResponse.json();
 
   expect(updateBookingResponseBody).toEqual(updatedBookingBody);
 
-  // 5. Delete booking
   const deleteBookingResponse = await request.delete(
     `${API_URLS.herokuappBooking}/booking/${bookingId}`,
     {
@@ -65,7 +61,6 @@ test("Booking lifecycle", async ({ request }) => {
 
   expect(deleteBookingResponse.status()).toBe(201);
 
-  // 6. Verify booking no longer exists
   const getDeletedBookingResponse = await request.get(
     `${API_URLS.herokuappBooking}/booking/${bookingId}`,
     {
