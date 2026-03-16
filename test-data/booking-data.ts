@@ -1,4 +1,6 @@
-export function createBookingData() {
+import { Booking } from "models/booking";
+
+export function createBookingData(): Booking {
   return {
     firstname: "Ivonne",
     lastname: "Valenzuela",
@@ -12,7 +14,7 @@ export function createBookingData() {
   };
 }
 
-export function createUpdatedBookingData() {
+export function createUpdatedBookingData(): Booking {
   return {
     firstname: "Ivonne",
     lastname: "Updated",

@@ -5,7 +5,7 @@ import { createBookingData } from "@data/booking-data";
 import { getAuthToken } from "@helpers/auth-helper";
 
 test("Delete booking", async ({ request }) => {
-  const { bookingId } = await createBooking(request, createBookingData());
+  const bookingId = await createBooking(request, createBookingData());
 
   const authToken = await getAuthToken(request);
 

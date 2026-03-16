@@ -1,20 +1,11 @@
 import { APIRequestContext, expect } from "@playwright/test";
 import { API_URLS } from "@config/api-config";
+import { Booking } from "models/booking";
 
 export async function createBooking(
   request: APIRequestContext,
-  bookingRequestBody: {
-    firstname: string;
-    lastname: string;
-    totalprice: number;
-    depositpaid: boolean;
-    bookingdates: {
-      checkin: string;
-      checkout: string;
-    };
-    additionalneeds: string;
-  },
-) {
+  bookingRequestBody: Booking,
+): Promise<number> {
   const bookingResponse = await request.post(
     `${API_URLS.herokuappBooking}/booking`,
     {
@@ -38,8 +29,5 @@ export async function createBooking(
   expect(typeof bookingId).toBe("number");
   expect(bookingId).toBeTruthy();
 
-  return {
-    bookingId,
-    bookingResponseBody,
-  };
+  return bookingId;
 }
